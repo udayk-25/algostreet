@@ -88,7 +88,7 @@ a {
 .ticker-scroll {
   display: flex;
   gap: 2.5rem;
-  animation: ticker 40s linear infinite;
+  animation: ticker 20s linear infinite;
   white-space: nowrap;
 }
 
