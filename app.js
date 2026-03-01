@@ -3,6 +3,122 @@
    SPA router + page renderers + charts
    ============================================ */
 
+// ─── DataService (real NSE/BSE market data) ────
+const DataService = {
+  // Static fallback data (used when APIs are unavailable/rate-limited)
+  fallback: {
+    nifty: { price: 22487, chg: 0.68 },
+    sensex: { price: 74119, chg: 0.72 },
+    vix: { price: 14.8, chg: -2.1 },
+    banknifty: { price: 47820, chg: 0.45 },
+    niftyit: { price: 38240, chg: 1.12 },
+    reliance: { price: 2912, chg: 2.3 },
+    tcs: { price: 3918, chg: -0.8 },
+    hdfc: { price: 1698, chg: 1.1 },
+    infy: { price: 1756, chg: 1.4 },
+    icici: { price: 1082, chg: 0.9 },
+  },
+
+  fmtPrice(p) { return p >= 1000 ? p.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : p.toFixed(2); },
+  fmtChg(c) { return (c >= 0 ? '+' : '') + c.toFixed(2) + '%'; },
+  chgClass(c) { return c >= 0 ? 'up' : 'down'; },
+
+  // Stooq — free, no API key, works from browser
+  async fetchStooq(symbol) {
+    try {
+      const r = await fetch(`https://stooq.com/q/l/?s=${symbol}&f=sd2t2ohlcv&h&e=json`, { mode: 'cors' });
+      if (!r.ok) return null;
+      const d = await r.json();
+      return d?.symbols?.[0] ?? null;
+    } catch { return null; }
+  },
+
+  // Yahoo Finance (query1 — works CORS-free from browser)
+  async fetchYahoo(symbol) {
+    try {
+      const r = await fetch(
+        `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=5d`,
+        { mode: 'cors' }
+      );
+      if (!r.ok) return null;
+      const d = await r.json();
+      const meta = d?.chart?.result?.[0]?.meta;
+      if (!meta) return null;
+      const price = meta.regularMarketPrice ?? meta.previousClose;
+      const prev = meta.chartPreviousClose ?? meta.previousClose;
+      const chg = prev > 0 ? ((price - prev) / prev) * 100 : 0;
+      return { price, chg };
+    } catch { return null; }
+  },
+
+  updateTickerEl(priceId, chgId, price, chg) {
+    const pEl = document.getElementById(priceId);
+    const cEl = document.getElementById(chgId);
+    if (pEl) pEl.textContent = '₹' + this.fmtPrice(price);
+    if (cEl) { cEl.textContent = this.fmtChg(chg); cEl.className = 'ticker-chg ' + this.chgClass(chg); }
+  },
+
+  updateMetricEl(id, price, chg) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const cls = chg >= 0 ? 'var(--green)' : 'var(--red)';
+    el.innerHTML = `<span style="color:${cls};font-size:1.4rem;font-weight:800">${this.fmtPrice(price)}</span> <span style="color:${cls};font-size:12px;font-weight:700">${this.fmtChg(chg)}</span>`;
+  },
+
+  // Duplicate ticker content for seamless loop animation
+  duplicateTicker() {
+    const scroll = document.getElementById('tickerScroll');
+    if (scroll && scroll.children.length > 0 && !scroll.dataset.duped) {
+      scroll.innerHTML += scroll.innerHTML;
+      scroll.dataset.duped = '1';
+    }
+  },
+
+  async loadAll() {
+    const fb = this.fallback;
+
+    // Immediately show fallback data (so ticker renders instantly)
+    this.updateTickerEl('niftyPrice', 'niftyChg', fb.nifty.price, fb.nifty.chg);
+    this.updateTickerEl('sensexPrice', 'sensexChg', fb.sensex.price, fb.sensex.chg);
+    this.updateTickerEl('vixPrice', 'vixChg', fb.vix.price, fb.vix.chg);
+    this.updateTickerEl('reliancePrice', 'relianceChg', fb.reliance.price, fb.reliance.chg);
+    this.updateTickerEl('tcsPrice', 'tcsChg', fb.tcs.price, fb.tcs.chg);
+    this.updateTickerEl('hdfcPrice', 'hdfcChg', fb.hdfc.price, fb.hdfc.chg);
+    this.updateTickerEl('infyPrice', 'infyChg', fb.infy.price, fb.infy.chg);
+    this.updateTickerEl('iciciPrice', 'iciciChg', fb.icici.price, fb.icici.chg);
+    this.updateMetricEl('moNifty', fb.nifty.price, fb.nifty.chg);
+    this.updateMetricEl('moSensex', fb.sensex.price, fb.sensex.chg);
+    this.updateMetricEl('moVix', fb.vix.price, fb.vix.chg);
+    this.updateMetricEl('moBankNifty', fb.banknifty.price, fb.banknifty.chg);
+    this.updateMetricEl('moNiftyIT', fb.niftyit.price, fb.niftyit.chg);
+    this.duplicateTicker();
+
+    // Fetch real data in background (Yahoo Finance NSE tickers)
+    const tickers = [
+      ['%5ENSEI', 'niftyPrice', 'niftyChg', 'moNifty'],
+      ['%5EBSESN', 'sensexPrice', 'sensexChg', 'moSensex'],
+      ['%5EINDIAVIX', 'vixPrice', 'vixChg', 'moVix'],
+      ['%5ENSEBANK', 'nbnPrice', 'nbnChg', 'moBankNifty'],
+      ['RELIANCE.NS', 'reliancePrice', 'relianceChg', null],
+      ['TCS.NS', 'tcsPrice', 'tcsChg', null],
+      ['HDFCBANK.NS', 'hdfcPrice', 'hdfcChg', null],
+      ['INFY.NS', 'infyPrice', 'infyChg', null],
+      ['ICICIBANK.NS', 'iciciPrice', 'iciciChg', null],
+    ];
+
+    for (const [sym, priceId, chgId, metricId] of tickers) {
+      this.fetchYahoo(sym).then(data => {
+        if (!data) return;
+        this.updateTickerEl(priceId, chgId, data.price, data.chg);
+        if (metricId) this.updateMetricEl(metricId, data.price, data.chg);
+      });
+    }
+
+    // After all fetches settle, re-duplicate ticker with real values
+    setTimeout(() => this.duplicateTicker(), 4000);
+  }
+};
+
 // ─── State ───────────────────────────────────
 const state = {
   currentPage: 'home',
@@ -134,10 +250,13 @@ function colorClass(n) { return n >= 0 ? 'green' : 'red'; }
 function riskEmoji(r) { return { low: '🟢', medium: '🟡', high: '🔴' }[r] || '⚪'; }
 
 function showToast(msg, type = 'info') {
-  const t = document.getElementById('toast');
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
   t.textContent = msg;
-  t.className = `toast show ${type}`;
-  setTimeout(() => t.className = 'toast', 3500);
+  container.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
 }
 
 // Generate sparkline equity-curve data
@@ -169,9 +288,9 @@ function drawSparkline(canvas, data, positive = true) {
   const x = i => (i / (vals.length - 1)) * w;
   const y = v => h - ((v - min) / range) * (h - 4) - 2;
 
-  const color = positive ? '#10b981' : '#ef4444';
+  const color = positive ? '#00d09c' : '#e85454';
   const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, positive ? 'rgba(16,185,129,0.35)' : 'rgba(239,68,68,0.35)');
+  grad.addColorStop(0, positive ? 'rgba(0,208,156,0.25)' : 'rgba(232,84,84,0.25)');
   grad.addColorStop(1, 'rgba(0,0,0,0)');
 
   ctx.beginPath();
@@ -1476,4 +1595,28 @@ function switchWeather(type) {
   const w = MOCK_WEATHER[type];
   showToast(`${w.emoji} Simulating: ${w.label} — ${w.desc}`, 'info');
   renderWeather();
+}
+
+// ─── App Init ──────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Start real market data load
+  DataService.loadAll();
+
+  // Refresh market data every 60 seconds
+  setInterval(() => DataService.loadAll(), 60000);
+
+  // Navbar scroll shadow
+  window.addEventListener('scroll', () => {
+    document.getElementById('navbar')?.classList.toggle('scrolled', window.scrollY > 10);
+  });
+
+  // Draw hero chart
+  setTimeout(() => {
+    const c = document.getElementById('heroChart');
+    if (c) drawSparkline(c, genEquityCurve(30, 100000, 0.001), true);
+  }, 100);
+});
+
+function toggleMobileMenu() {
+  document.getElementById('navLinks')?.classList.toggle('open');
 }

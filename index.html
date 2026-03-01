@@ -7,109 +7,91 @@
   <title>AlgoStreet — Algo Trading for Every Indian</title>
   <meta name="description"
     content="Browse, configure and run algorithmic trading strategies for Indian stock markets. No coding required." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
-    rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=2" />
 </head>
 
 <body>
 
-  <!-- ===================== NAV ===================== -->
+  <!-- ── TICKER BAR (real data injected by JS) ── -->
+  <div class="ticker-bar" id="tickerBar">
+    <div class="ticker-scroll" id="tickerScroll">
+      <span class="ticker-item"><span class="ticker-name">NIFTY 50</span> <span class="ticker-price"
+          id="niftyPrice">—</span> <span class="ticker-chg" id="niftyChg">—</span></span>
+      <span class="ticker-item"><span class="ticker-name">SENSEX</span> <span class="ticker-price"
+          id="sensexPrice">—</span> <span class="ticker-chg" id="sensexChg">—</span></span>
+      <span class="ticker-item"><span class="ticker-name">INDIA VIX</span> <span class="ticker-price"
+          id="vixPrice">—</span> <span class="ticker-chg" id="vixChg">—</span></span>
+      <span class="ticker-item"><span class="ticker-name">RELIANCE</span> <span class="ticker-price"
+          id="reliancePrice">—</span> <span class="ticker-chg" id="relianceChg">—</span></span>
+      <span class="ticker-item"><span class="ticker-name">TCS</span> <span class="ticker-price" id="tcsPrice">—</span>
+        <span class="ticker-chg" id="tcsChg">—</span></span>
+      <span class="ticker-item"><span class="ticker-name">HDFC BANK</span> <span class="ticker-price"
+          id="hdfcPrice">—</span> <span class="ticker-chg" id="hdfcChg">—</span></span>
+      <span class="ticker-item"><span class="ticker-name">INFOSYS</span> <span class="ticker-price"
+          id="infyPrice">—</span> <span class="ticker-chg" id="infyChg">—</span></span>
+      <span class="ticker-item"><span class="ticker-name">ICICI BANK</span> <span class="ticker-price"
+          id="iciciPrice">—</span> <span class="ticker-chg" id="iciciChg">—</span></span>
+    </div>
+  </div>
+
+  <!-- ── NAVBAR ── -->
   <nav class="navbar" id="navbar">
     <div class="nav-inner">
       <a class="nav-logo" href="#" onclick="showPage('home')">
-        <span class="logo-icon">⚡</span> AlgoStreet
+        <span class="logo-dot"></span> AlgoStreet
       </a>
       <div class="nav-links" id="navLinks">
-        <a class="nav-link" onclick="showPage('marketplace')">🛍 Marketplace</a>
-        <a class="nav-link" onclick="showPage('builder')">🔧 Builder</a>
-        <a class="nav-link" onclick="showPage('dashboard')">📊 Dashboard</a>
-        <a class="nav-link" onclick="showPage('analytics')">📈 Analytics</a>
-        <a class="nav-link" onclick="showPage('community')">👥 Community</a>
-        <a class="nav-link" onclick="showPage('dna')">🧬 DNA</a>
-        <a class="nav-link" onclick="showPage('goals')">🎯 Goals</a>
-        <a class="nav-link" onclick="showPage('weather')">☀️ Weather</a>
+        <a class="nav-link" onclick="showPage('marketplace')">Marketplace</a>
+        <a class="nav-link" onclick="showPage('builder')">Builder</a>
+        <a class="nav-link" onclick="showPage('dashboard')">Dashboard</a>
+        <a class="nav-link" onclick="showPage('analytics')">Analytics</a>
+        <a class="nav-link" onclick="showPage('community')">Community</a>
+        <a class="nav-link" onclick="showPage('dna')">Algo DNA</a>
+        <a class="nav-link" onclick="showPage('goals')">Goals</a>
+        <a class="nav-link" onclick="showPage('weather')">Weather</a>
       </div>
       <div class="nav-actions">
-        <div class="paper-badge" id="paperBadge" title="Paper trading mode active — safe to explore!">📄 Paper Mode
-        </div>
-        <button class="btn btn-outline" onclick="showPage('login')" id="loginBtn">Login</button>
-        <button class="btn btn-primary" onclick="showPage('marketplace')" id="ctaBtn">Get Started →</button>
+        <span class="paper-badge" title="Paper trading mode — zero real money risk">Paper Mode</span>
+        <button class="btn btn-outline" onclick="showPage('login')">Login</button>
+        <button class="btn btn-primary" onclick="showPage('marketplace')">Get Started</button>
       </div>
       <button class="nav-hamburger" onclick="toggleMobileMenu()">☰</button>
     </div>
   </nav>
 
-  <!-- ===================== PAGES ===================== -->
-  <!-- LIVE TICKER -->
-  <div class="ticker-wrap">
-    <div class="ticker-inner">
-      <span class="ticker-item">NIFTY 50 <span class="up">▲ 22,487.35 (+0.68%)</span></span>
-      <span class="ticker-item">SENSEX <span class="up">▲ 74,119.80 (+0.72%)</span></span>
-      <span class="ticker-item">RELIANCE <span class="up">▲ 2,912.50 (+2.3%)</span></span>
-      <span class="ticker-item">TCS <span class="down">▼ 3,918.25 (-0.8%)</span></span>
-      <span class="ticker-item">HDFCBANK <span class="up">▲ 1,698.40 (+1.1%)</span></span>
-      <span class="ticker-item">INFY <span class="up">▲ 1,756.30 (+1.4%)</span></span>
-      <span class="ticker-item">ICICIBANK <span class="up">▲ 1,082.15 (+0.9%)</span></span>
-      <span class="ticker-item">BAJFINANCE <span class="down">▼ 6,842.60 (-0.5%)</span></span>
-      <span class="ticker-item">BHARTIARTL <span class="up">▲ 1,512.85 (+2.1%)</span></span>
-      <span class="ticker-item">SBIN <span class="up">▲ 758.40 (+1.6%)</span></span>
-      <!-- Duplicate for seamless loop -->
-      <span class="ticker-item">NIFTY 50 <span class="up">▲ 22,487.35 (+0.68%)</span></span>
-      <span class="ticker-item">SENSEX <span class="up">▲ 74,119.80 (+0.72%)</span></span>
-      <span class="ticker-item">RELIANCE <span class="up">▲ 2,912.50 (+2.3%)</span></span>
-      <span class="ticker-item">TCS <span class="down">▼ 3,918.25 (-0.8%)</span></span>
-      <span class="ticker-item">HDFCBANK <span class="up">▲ 1,698.40 (+1.1%)</span></span>
-      <span class="ticker-item">INFY <span class="up">▲ 1,756.30 (+1.4%)</span></span>
-      <span class="ticker-item">ICICIBANK <span class="up">▲ 1,082.15 (+0.9%)</span></span>
-      <span class="ticker-item">BAJFINANCE <span class="down">▼ 6,842.60 (-0.5%)</span></span>
-      <span class="ticker-item">BHARTIARTL <span class="up">▲ 1,512.85 (+2.1%)</span></span>
-      <span class="ticker-item">SBIN <span class="up">▲ 758.40 (+1.6%)</span></span>
-    </div>
-  </div>
-
+  <!-- ── PAGES ── -->
   <main id="app">
 
-    <!-- HOME PAGE -->
+    <!-- HOME -->
     <div class="page active" id="page-home">
       <div class="hero">
-        <div class="hero-bg-orbs">
-          <div class="orb orb1"></div>
-          <div class="orb orb2"></div>
-          <div class="orb orb3"></div>
-        </div>
         <div class="hero-content">
-          <div class="hero-badge animate-fade-in"><span class="badge-dot"></span> Trusted by 50,000+ Indian investors
+          <div class="hero-badge animate-fade-in">
+            <span class="badge-dot"></span> Live on NSE &amp; BSE
           </div>
-          <h1 class="hero-title animate-fade-in delay-1">
-            Algo Trading.<br />
-            <span class="gradient-text">Finally, for everyone.</span>
+          <h1 class="hero-title animate-fade-in">
+            Algo trading.<br><span>Built for India.</span>
           </h1>
-          <p class="hero-subtitle animate-fade-in delay-2">
-            Browse strategy templates like an app store. Configure with simple sliders.
-            Run on your Zerodha, Angel One or Upstox account. <strong>No coding required.</strong>
+          <p class="hero-subtitle animate-fade-in">
+            Browse strategies like an app store. Configure with sliders.
+            Run on Zerodha, Angel One or Upstox. <strong>No code needed.</strong>
           </p>
-          <div class="hero-actions animate-fade-in delay-3">
-            <button class="btn btn-primary btn-lg" onclick="showPage('marketplace')">
-              🛍 Browse Strategies
-            </button>
-            <button class="btn btn-ghost btn-lg" onclick="showPage('builder')">
-              🔧 Build Your Own
-            </button>
+          <div class="hero-actions animate-fade-in">
+            <button class="btn btn-primary btn-lg" onclick="showPage('marketplace')">Browse Strategies</button>
+            <button class="btn btn-outline btn-lg" onclick="showPage('dna')">Find Your DNA</button>
           </div>
-          <div class="hero-disclaimer animate-fade-in delay-4">
-            🛡 Paper trading for first 7 days &nbsp;·&nbsp; SEBI compliant &nbsp;·&nbsp; No financial advice
+          <div class="hero-disclaimer animate-fade-in">
+            Paper trading for first 7 days · SEBI compliant · Not financial advice
           </div>
-          <div class="hero-stats animate-fade-in delay-4">
+          <div class="hero-stats animate-fade-in">
             <div class="stat"><span class="stat-num">50K+</span><span class="stat-lbl">Active Users</span></div>
             <div class="stat"><span class="stat-num">120+</span><span class="stat-lbl">Strategies</span></div>
             <div class="stat"><span class="stat-num">₹480Cr</span><span class="stat-lbl">Paper Traded</span></div>
-            <div class="stat"><span class="stat-num">5</span><span class="stat-lbl">Brokers Supported</span></div>
+            <div class="stat"><span class="stat-num">5</span><span class="stat-lbl">Brokers</span></div>
           </div>
         </div>
-        <div class="hero-visual animate-slide-in delay-2">
+
+        <div class="hero-visual animate-fade-in">
           <div class="dashboard-preview">
             <div class="preview-header">
               <span class="preview-dot red"></span>
@@ -118,144 +100,160 @@
               <span class="preview-title">AlgoStreet Dashboard</span>
             </div>
             <div class="preview-body">
-              <div class="preview-pnl">
-                <div class="preview-label">Today's P&L</div>
-                <div class="preview-value green">+₹3,420.75</div>
-                <div class="preview-sub">+1.22% · 3 trades</div>
-              </div>
+              <div class="preview-label">Today's P&amp;L</div>
+              <div class="preview-value" id="heroPnL">+₹3,420</div>
+              <div class="preview-sub" id="heroPnLSub">+1.22% · 3 trades · Live</div>
               <div class="mini-chart" id="heroChart"></div>
               <div class="preview-strategies">
                 <div class="preview-strat active-dot">Blue Chip Rebound <span class="green">+₹1,240</span></div>
-                <div class="preview-strat active-dot">Nifty Momentum Pro <span class="green">+₹4,820</span></div>
+                <div class="preview-strat active-dot">Nifty Momentum Pro <span class="green">+₹2,180</span></div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Features -->
-      <section class="section">
+      <!-- Market Overview (live data) -->
+      <section class="section"
+        style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
         <div class="container">
-          <div class="section-header">
-            <h2>Everything you need to trade smarter</h2>
-            <p>Built for the 50 million Indian retail investors who deserve better tools.</p>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <span class="section-title">Market Overview</span>
+            <span class="live-badge"><span class="live-dot"></span> Live</span>
           </div>
-          <div class="features-grid">
-            <div class="feature-card" onclick="showPage('marketplace')">
-              <div class="feature-icon">🛍</div>
-              <h3>Strategy Marketplace</h3>
-              <p>Browse 120+ algo strategies like an app store. Filter by risk, returns, and minimum capital. One-click
-                activation.</p>
-              <span class="feature-link">Explore Strategies →</span>
+          <div class="metrics-row" id="marketOverview">
+            <div class="metric-card">
+              <div class="metric-label">Nifty 50</div>
+              <div class="metric-value" id="moNifty">Loading…</div>
             </div>
-            <div class="feature-card" onclick="showPage('builder')">
-              <div class="feature-icon">🧱</div>
-              <h3>3-Mode Builder</h3>
-              <p>Simple sliders for beginners. Plain-English AI input for intermediates. Full Python IDE for power
-                users.</p>
-              <span class="feature-link">Try the Builder →</span>
+            <div class="metric-card">
+              <div class="metric-label">Sensex</div>
+              <div class="metric-value" id="moSensex">Loading…</div>
             </div>
-            <div class="feature-card">
-              <div class="feature-icon">🔌</div>
-              <h3>5 Broker Integrations</h3>
-              <p>Zerodha, Angel One, Fyers, Upstox, 5paisa. One-click OAuth — your API keys never touch our servers.</p>
-              <span class="feature-link">Connect Broker →</span>
+            <div class="metric-card">
+              <div class="metric-label">India VIX</div>
+              <div class="metric-value" id="moVix">Loading…</div>
             </div>
-            <div class="feature-card">
-              <div class="feature-icon">🛡</div>
-              <h3>Safety Net Built-In</h3>
-              <p>Kill switch, circuit breaker, position limits. Your capital is protected by multiple layers of risk
-                controls.</p>
-              <span class="feature-link">Learn About Safety →</span>
+            <div class="metric-card">
+              <div class="metric-label">Bank Nifty</div>
+              <div class="metric-value" id="moBankNifty">Loading…</div>
             </div>
-            <div class="feature-card" onclick="showPage('analytics')">
-              <div class="feature-icon">📊</div>
-              <h3>Live Analytics</h3>
-              <p>Real-time P&L, strategy scorecard, trade journal with entry reasons. CA-ready tax report in one click.
-              </p>
-              <span class="feature-link">View Dashboard →</span>
-            </div>
-            <div class="feature-card" onclick="showPage('community')">
-              <div class="feature-icon">👥</div>
-              <h3>Community Strategies</h3>
-              <p>Follow top traders, clone their strategies, and customize for your risk appetite. Paper-trade
-                leaderboard.</p>
-              <span class="feature-link">Join Community →</span>
+            <div class="metric-card">
+              <div class="metric-label">Nifty IT</div>
+              <div class="metric-value" id="moNiftyIT">Loading…</div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- SEBI Disclaimer -->
+      <!-- Features -->
+      <section class="section">
+        <div class="container">
+          <div style="margin-bottom:1.75rem">
+            <h2 style="font-size:1.25rem;font-weight:700;letter-spacing:-.3px;margin-bottom:.3rem">Everything you need
+              to trade smarter</h2>
+            <p style="color:var(--text2);font-size:13px">Built for the 50 million Indian retail investors who deserve
+              better tools.</p>
+          </div>
+          <div class="features-grid">
+            <div class="feature-card" onclick="showPage('marketplace')">
+              <span class="feature-icon">▦</span>
+              <h3>Strategy Marketplace</h3>
+              <p>Browse 120+ algo strategies. Filter by risk, returns, capital. One-click activation.</p>
+              <span class="feature-link">Explore →</span>
+            </div>
+            <div class="feature-card" onclick="showPage('builder')">
+              <span class="feature-icon">⌥</span>
+              <h3>Strategy Builder</h3>
+              <p>Sliders for beginners. Plain-English AI for intermediates. Python IDE for power users.</p>
+              <span class="feature-link">Build →</span>
+            </div>
+            <div class="feature-card">
+              <span class="feature-icon">⇄</span>
+              <h3>5 Broker Integrations</h3>
+              <p>Zerodha, Angel One, Fyers, Upstox, 5paisa. OAuth connect — keys never touch our servers.</p>
+              <span class="feature-link">Connect →</span>
+            </div>
+            <div class="feature-card">
+              <span class="feature-icon">⊘</span>
+              <h3>Safety Net Built-In</h3>
+              <p>Kill switch, circuit breaker, position limits. Capital protected by multiple risk layers.</p>
+              <span class="feature-link">Learn more →</span>
+            </div>
+            <div class="feature-card" onclick="showPage('analytics')">
+              <span class="feature-icon">◈</span>
+              <h3>Live Analytics</h3>
+              <p>Real-time P&amp;L, strategy scorecard, trade journal, CA-ready tax report in one click.</p>
+              <span class="feature-link">View →</span>
+            </div>
+            <div class="feature-card" onclick="showPage('community')">
+              <span class="feature-icon">◎</span>
+              <h3>Community</h3>
+              <p>Follow top traders, clone strategies, customize risk. Paper-trade leaderboard.</p>
+              <span class="feature-link">Join →</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div class="sebi-banner">
         <div class="container">
-          ⚖️ <strong>SEBI Disclaimer:</strong> Past performance is not indicative of future results.
+          SEBI Disclaimer: Past performance is not indicative of future results.
           Backtested returns are hypothetical and do not represent actual trading results.
-          Algo trading involves market risk. Please read all related documents carefully before trading.
           AlgoStreet facilitates execution only and does not provide financial advice.
         </div>
       </div>
     </div>
 
-    <!-- MARKETPLACE PAGE -->
+    <!-- MARKETPLACE -->
     <div class="page" id="page-marketplace">
       <div id="marketplace-root"></div>
     </div>
-
-    <!-- TEMPLATE DETAIL PAGE -->
+    <!-- TEMPLATE DETAIL -->
     <div class="page" id="page-template-detail">
       <div id="template-detail-root"></div>
     </div>
-
-    <!-- BUILDER PAGE -->
+    <!-- BUILDER -->
     <div class="page" id="page-builder">
       <div id="builder-root"></div>
     </div>
-
-    <!-- DASHBOARD PAGE -->
+    <!-- DASHBOARD -->
     <div class="page" id="page-dashboard">
       <div id="dashboard-root"></div>
     </div>
-
-    <!-- ANALYTICS PAGE -->
+    <!-- ANALYTICS -->
     <div class="page" id="page-analytics">
       <div id="analytics-root"></div>
     </div>
-
-    <!-- COMMUNITY PAGE -->
+    <!-- COMMUNITY -->
     <div class="page" id="page-community">
       <div id="community-root"></div>
     </div>
-
-    <!-- LOGIN PAGE -->
+    <!-- LOGIN -->
     <div class="page" id="page-login">
       <div id="login-root"></div>
     </div>
-
-    <!-- DNA PAGE -->
+    <!-- DNA -->
     <div class="page" id="page-dna">
       <div id="dna-root"></div>
     </div>
-
-    <!-- GOALS PAGE -->
+    <!-- GOALS -->
     <div class="page" id="page-goals">
       <div id="goals-root"></div>
     </div>
-
-    <!-- NEW GOAL PAGE -->
+    <!-- NEW GOAL -->
     <div class="page" id="page-new-goal">
       <div id="new-goal-root"></div>
     </div>
-
-    <!-- WEATHER PAGE -->
+    <!-- WEATHER -->
     <div class="page" id="page-weather">
       <div id="weather-root"></div>
     </div>
 
   </main>
 
-  <!-- Notification Toast -->
-  <div id="toast" class="toast"></div>
+  <!-- Toast -->
+  <div class="toast-container" id="toastContainer"></div>
 
   <script src="app.js"></script>
 </body>
