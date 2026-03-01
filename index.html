@@ -168,13 +168,13 @@
               <p>Sliders for beginners. Plain-English AI for intermediates. Python IDE for power users.</p>
               <span class="feature-link">Build →</span>
             </div>
-            <div class="feature-card">
+            <div class="feature-card" onclick="showPage('brokers')">
               <span class="feature-icon">⇄</span>
               <h3>5 Broker Integrations</h3>
               <p>Zerodha, Angel One, Fyers, Upstox, 5paisa. OAuth connect — keys never touch our servers.</p>
               <span class="feature-link">Connect →</span>
             </div>
-            <div class="feature-card">
+            <div class="feature-card" onclick="showPage('safety-net')">
               <span class="feature-icon">⊘</span>
               <h3>Safety Net Built-In</h3>
               <p>Kill switch, circuit breaker, position limits. Capital protected by multiple risk layers.</p>
@@ -248,6 +248,15 @@
     <!-- WEATHER -->
     <div class="page" id="page-weather">
       <div id="weather-root"></div>
+    </div>
+
+    <!-- BROKERS -->
+    <div class="page" id="page-brokers">
+      <div id="brokers-root"></div>
+    </div>
+    <!-- SAFETY NET -->
+    <div class="page" id="page-safety-net">
+      <div id="safety-net-root"></div>
     </div>
 
   </main>

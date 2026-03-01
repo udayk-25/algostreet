@@ -233,7 +233,10 @@ function showPage(name, data) {
   if (renderers[name]) renderers[name]();
 
   // New feature renderers
-  const extra = { dna: renderDNA, goals: renderGoals, 'new-goal': renderNewGoal, weather: renderWeather };
+  const extra = {
+    dna: renderDNA, goals: renderGoals, 'new-goal': renderNewGoal,
+    weather: renderWeather, brokers: renderBrokers, 'safety-net': renderSafetyNet
+  };
   if (extra[name]) extra[name]();
 
   // Update nav active state
@@ -1620,3 +1623,407 @@ document.addEventListener('DOMContentLoaded', () => {
 function toggleMobileMenu() {
   document.getElementById('navLinks')?.classList.toggle('open');
 }
+
+// ─── BROKER INTEGRATIONS ─────────────────────
+const BROKERS = [
+  {
+    id: 'zerodha',
+    name: 'Zerodha Kite',
+    desc: 'India\'s largest stockbroker. Real-time data, F&O, and equity.',
+    logo: '🟠',
+    api: 'Kite Connect API',
+    plan: '₹2,000/month for API access',
+    features: ['Real-time quotes', 'Order placement', 'Historical data', 'GTT orders'],
+    docs: 'https://kite.trade/docs',
+    authUrl: 'https://kite.zerodha.com/connect/login',
+    status: 'connect',
+  },
+  {
+    id: 'angelone',
+    name: 'Angel One',
+    desc: 'Full-service broker with free SmartAPI access for algo trading.',
+    logo: '🔵',
+    api: 'SmartAPI',
+    plan: 'Free for Angel One customers',
+    features: ['Live market data', 'Order management', 'WebSocket feed', 'Portfolio access'],
+    docs: 'https://smartapi.angelbroking.com',
+    authUrl: 'https://smartapi.angelbroking.com/login',
+    status: 'connect',
+  },
+  {
+    id: 'upstox',
+    name: 'Upstox',
+    desc: 'Modern broker with low brokerage and a clean API.',
+    logo: '🟣',
+    api: 'Upstox API v2',
+    plan: 'Free for Upstox customers',
+    features: ['Market quotes', 'Order APIs', 'Historical OHLC', 'Webhook notifications'],
+    docs: 'https://upstox.com/developer/api-documentation',
+    authUrl: 'https://api.upstox.com/v2/login/authorization/dialog',
+    status: 'connect',
+  },
+  {
+    id: 'fyers',
+    name: 'Fyers',
+    desc: 'Tech-first broker built for algo traders. Excellent API performance.',
+    logo: '🟢',
+    api: 'Fyers API v3',
+    plan: '₹500/month for API + data feeds',
+    features: ['WebSocket market feed', 'Order/trade APIs', 'Basket orders', 'Strategy alerts'],
+    docs: 'https://myapi.fyers.in',
+    authUrl: 'https://api.fyers.in/api/v2/generate-authcode',
+    status: 'connect',
+  },
+  {
+    id: 'fivepaisa',
+    name: '5paisa',
+    desc: 'Discount broker with flat brokerage and open API platform.',
+    logo: '🟡',
+    api: '5paisa API',
+    plan: 'Free for 5paisa account holders',
+    features: ['Market data', 'Order placement', 'Portfolio tracking', 'Margin info'],
+    docs: 'https://www.5paisa.com/developer-api',
+    authUrl: 'https://dev-openapi.5paisa.com/WebPages/Auth',
+    status: 'connect',
+  },
+];
+
+const brokerState = {}; // { zerodha: 'connected' | 'connecting' | 'connect' }
+
+function renderBrokers() {
+  const root = document.getElementById('brokers-root');
+  root.innerHTML = `
+    <div class="page-header">
+      <div class="container">
+        <div class="back-btn" onclick="showPage('home')">← Back</div>
+        <h1>Broker Integrations</h1>
+        <p>Connect your trading account via OAuth — your API credentials are stored only on your device, never on our servers.</p>
+      </div>
+    </div>
+    <div class="container">
+
+      <!-- Security notice -->
+      <div style="background:var(--green-dim);border:1px solid rgba(0,208,156,.2);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:2rem;display:flex;align-items:flex-start;gap:.75rem">
+        <span style="font-size:1.2rem">🔒</span>
+        <div>
+          <div style="font-weight:700;font-size:13px;margin-bottom:.2rem">Your keys never leave your device</div>
+          <div style="font-size:12px;color:var(--text2)">AlgoStreet uses OAuth 2.0. We receive a temporary session token only — never your login password or permanent API key. You can revoke access anytime from your broker's app.</div>
+        </div>
+      </div>
+
+      <!-- Connected count -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+        <span class="section-title">Available Brokers</span>
+        <span id="connectedCount" style="font-size:12px;color:var(--text2)">0 of 5 connected</span>
+      </div>
+
+      <!-- Broker cards -->
+      <div style="display:flex;flex-direction:column;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden" id="brokerList">
+        ${BROKERS.map(b => renderBrokerRow(b)).join('')}
+      </div>
+
+      <!-- How it works -->
+      <div class="card" style="margin-top:2rem">
+        <div class="section-title" style="margin-bottom:1rem">How OAuth connection works</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem">
+          ${[
+      ['1', 'Click Connect', 'You\'re redirected to your broker\'s official login page \u2014 not AlgoStreet.'],
+      ['2', 'Authorize', 'You log in and approve which permissions AlgoStreet can use.'],
+      ['3', 'Token returned', 'Broker sends a secure access token back. Never your password.'],
+      ['4', 'Trade securely', 'AlgoStreet uses the token to place orders and read prices on your behalf.'],
+    ].map(([n, t, d]) => `
+            <div style="display:flex;gap:.75rem">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--green-dim);border:1px solid rgba(0,208,156,.25);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--green);flex-shrink:0">${n}</div>
+              <div><div style="font-size:13px;font-weight:700;margin-bottom:.2rem">${t}</div><div style="font-size:12px;color:var(--text2)">${d}</div></div>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <div class="sebi-inline" style="margin-top:1.5rem">AlgoStreet is not affiliated with or endorsed by any of the above brokers. API availability and pricing subject to change by respective brokers.</div>
+    </div>`;
+}
+
+function renderBrokerRow(b) {
+  const st = brokerState[b.id] || b.status;
+  const isConnected = st === 'connected';
+  const isConnecting = st === 'connecting';
+  return `
+  <div style="background:var(--bg2);padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1.25rem" id="broker-row-${b.id}">
+    <div style="font-size:2rem;width:48px;text-align:center">${b.logo}</div>
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.2rem">
+        <span style="font-weight:700;font-size:14px">${b.name}</span>
+        ${isConnected ? '<span style="background:var(--green-dim);color:var(--green);border:1px solid rgba(0,208,156,.2);padding:.1rem .55rem;border-radius:20px;font-size:10px;font-weight:700">● CONNECTED</span>' : ''}
+      </div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:.5rem">${b.desc}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:.35rem">
+        ${b.features.map(f => `<span style="font-size:11px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:.1rem .5rem;color:var(--text3)">${f}</span>`).join('')}
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.5rem;flex-shrink:0">
+      <div style="font-size:11px;color:var(--text3);text-align:right">${b.api}<br>${b.plan}</div>
+      ${isConnected
+      ? `<button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="disconnectBroker('${b.id}')">Disconnect</button>`
+      : `<button class="btn btn-primary btn-sm" onclick="connectBroker('${b.id}')" id="btn-${b.id}">${isConnecting ? 'Connecting…' : 'Connect'}</button>`
+    }
+    </div>
+  </div>`;
+}
+
+function connectBroker(id) {
+  const broker = BROKERS.find(b => b.id === id);
+  if (!broker) return;
+  brokerState[id] = 'connecting';
+  const btn = document.getElementById(`btn-${id}`);
+  if (btn) { btn.textContent = 'Opening…'; btn.disabled = true; }
+  showToast(`🔐 Opening ${broker.name} login page…`, 'info');
+  // In production: window.open(broker.authUrl + '?api_key=YOUR_KEY&redirect_uri=...', '_blank')
+  // Simulating OAuth callback after 2 seconds
+  setTimeout(() => {
+    brokerState[id] = 'connected';
+    renderBrokers();
+    updateConnectedCount();
+    showToast(`✅ ${broker.name} connected successfully!`, 'success');
+  }, 2000);
+}
+
+function disconnectBroker(id) {
+  const broker = BROKERS.find(b => b.id === id);
+  if (!broker || !confirm(`Disconnect ${broker.name}? Running strategies will be paused.`)) return;
+  delete brokerState[id];
+  renderBrokers();
+  updateConnectedCount();
+  showToast(`${broker.name} disconnected.`, 'info');
+}
+
+function updateConnectedCount() {
+  const el = document.getElementById('connectedCount');
+  if (!el) return;
+  const n = Object.values(brokerState).filter(s => s === 'connected').length;
+  el.textContent = `${n} of 5 connected`;
+  el.style.color = n > 0 ? 'var(--green)' : 'var(--text2)';
+}
+
+// ─── SAFETY NET ───────────────────────────
+const safetyState = {
+  killSwitch: { enabled: true, threshold: 2.0 },
+  circuitBreaker: { enabled: true, max: 3 },
+  capitalLock: { enabled: true, reserve: 15 },
+  positionLimit: { enabled: true, maxStocks: 5, maxPerStock: 20 },
+  timeGuard: { enabled: false, cutoff: '14:45' },
+  newsGuard: { enabled: false },
+};
+
+function renderSafetyNet() {
+  const root = document.getElementById('safety-net-root');
+  const s = safetyState;
+  const allActive = [s.killSwitch.enabled, s.circuitBreaker.enabled, s.capitalLock.enabled, s.positionLimit.enabled].every(Boolean);
+
+  root.innerHTML = `
+    <div class="page-header">
+      <div class="container">
+        <div class="back-btn" onclick="showPage('home')">← Back</div>
+        <h1>Safety Net</h1>
+        <p>Multi-layer risk controls that protect your capital automatically — even if you're away from the screen.</p>
+      </div>
+    </div>
+    <div class="container">
+
+      <!-- Master status -->
+      <div style="background:${allActive ? 'var(--green-dim)' : 'var(--red-dim)'};border:1px solid ${allActive ? 'rgba(0,208,156,.25)' : 'rgba(232,84,84,.25)'};border-radius:var(--radius);padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem">
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <span style="font-size:1.5rem">${allActive ? '🛡' : '⚠️'}</span>
+          <div>
+            <div style="font-weight:700;font-size:14px">${allActive ? 'All safety systems active' : 'Some safety systems disabled'}</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:.1rem">${allActive ? 'Your capital is fully protected' : 'Recommended: enable all protection layers'}</div>
+          </div>
+        </div>
+        <button class="btn btn-${allActive ? 'outline' : 'primary'} btn-sm" onclick="toggleAllSafety(${!allActive})">${allActive ? 'Disable All' : 'Enable All'}</button>
+      </div>
+
+      <!-- Controls grid -->
+      <div style="display:flex;flex-direction:column;gap:1rem">
+
+        <!-- Kill Switch -->
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <div style="display:flex;align-items:center;gap:.75rem">
+              <span style="font-size:1.5rem">🔴</span>
+              <div>
+                <div style="font-weight:700;font-size:14px">Kill Switch</div>
+                <div style="font-size:12px;color:var(--text2)">Stops ALL strategies and squares off open positions if daily loss exceeds the limit</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" ${s.killSwitch.enabled ? 'checked' : ''} onchange="toggleSafety('killSwitch',this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div style="display:flex;align-items:center;gap:1rem">
+            <span style="font-size:12px;color:var(--text2);white-space:nowrap">Trigger at daily loss of</span>
+            <input type="range" class="risk-slider" min="0.5" max="5" step="0.5" value="${s.killSwitch.threshold}"
+              oninput="updateSafety('killSwitch','threshold',+this.value); document.getElementById('ks-val').textContent=this.value+'%'" ${!s.killSwitch.enabled ? 'disabled' : ''}>
+            <span id="ks-val" style="font-size:14px;font-weight:800;min-width:36px">${s.killSwitch.threshold}%</span>
+          </div>
+          <div class="sebi-inline" style="margin-top:.75rem">When triggered: all orders cancelled, open positions squared off at market price immediately.</div>
+        </div>
+
+        <!-- Circuit Breaker -->
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <div style="display:flex;align-items:center;gap:.75rem">
+              <span style="font-size:1.5rem">⚡</span>
+              <div>
+                <div style="font-weight:700;font-size:14px">Circuit Breaker</div>
+                <div style="font-size:12px;color:var(--text2)">Pauses trading after N consecutive losing trades to prevent loss spirals</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" ${s.circuitBreaker.enabled ? 'checked' : ''} onchange="toggleSafety('circuitBreaker',this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div style="display:flex;align-items:center;gap:1rem">
+            <span style="font-size:12px;color:var(--text2);white-space:nowrap">Pause after</span>
+            <input type="range" class="risk-slider" min="2" max="10" step="1" value="${s.circuitBreaker.max}"
+              oninput="updateSafety('circuitBreaker','max',+this.value); document.getElementById('cb-val').textContent=this.value+' losses'" ${!s.circuitBreaker.enabled ? 'disabled' : ''}>
+            <span id="cb-val" style="font-size:14px;font-weight:800;min-width:60px">${s.circuitBreaker.max} losses</span>
+          </div>
+          <div style="margin-top:.75rem;display:flex;align-items:center;gap:.75rem">
+            <div style="font-size:12px;padding:.5rem 1rem;background:var(--green-dim);border:1px solid rgba(0,208,156,.2);border-radius:var(--radius-sm);color:var(--green);font-weight:700">Today: 0 / ${s.circuitBreaker.max} consecutive</div>
+            <div style="font-size:12px;color:var(--text2)">Reset: midnight IST automatically</div>
+          </div>
+        </div>
+
+        <!-- Capital Lock -->
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <div style="display:flex;align-items:center;gap:.75rem">
+              <span style="font-size:1.5rem">🔒</span>
+              <div>
+                <div style="font-weight:700;font-size:14px">Capital Lock</div>
+                <div style="font-size:12px;color:var(--text2)">Reserves a percentage of capital that strategies can never touch — your emergency buffer</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" ${s.capitalLock.enabled ? 'checked' : ''} onchange="toggleSafety('capitalLock',this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div style="display:flex;align-items:center;gap:1rem">
+            <span style="font-size:12px;color:var(--text2);white-space:nowrap">Reserve</span>
+            <input type="range" class="risk-slider" min="5" max="50" step="5" value="${s.capitalLock.reserve}"
+              oninput="updateSafety('capitalLock','reserve',+this.value); document.getElementById('cl-val').textContent=this.value+'%'" ${!s.capitalLock.enabled ? 'disabled' : ''}>
+            <span id="cl-val" style="font-size:14px;font-weight:800;min-width:40px">${s.capitalLock.reserve}%</span>
+          </div>
+          <div style="font-size:12px;color:var(--text2);margin-top:.75rem">On ₹1,50,000 deployed → <strong style="color:var(--green)">₹${(150000 * s.capitalLock.reserve / 100).toLocaleString('en-IN')} locked</strong>, ₹${(150000 * (100 - s.capitalLock.reserve) / 100).toLocaleString('en-IN')} tradeable</div>
+        </div>
+
+        <!-- Position Limits -->
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <div style="display:flex;align-items:center;gap:.75rem">
+              <span style="font-size:1.5rem">📊</span>
+              <div>
+                <div style="font-weight:700;font-size:14px">Position Limits</div>
+                <div style="font-size:12px;color:var(--text2)">Caps how many stocks you can hold and max exposure per stock</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" ${s.positionLimit.enabled ? 'checked' : ''} onchange="toggleSafety('positionLimit',this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+            <div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:.5rem">Max stocks at once</div>
+              <div style="display:flex;align-items:center;gap:.75rem">
+                <input type="range" class="risk-slider" min="1" max="20" step="1" value="${s.positionLimit.maxStocks}"
+                  oninput="updateSafety('positionLimit','maxStocks',+this.value); document.getElementById('pl-stocks').textContent=this.value" ${!s.positionLimit.enabled ? 'disabled' : ''}>
+                <span id="pl-stocks" style="font-weight:800;font-size:14px;min-width:20px">${s.positionLimit.maxStocks}</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:.5rem">Max % per stock</div>
+              <div style="display:flex;align-items:center;gap:.75rem">
+                <input type="range" class="risk-slider" min="5" max="50" step="5" value="${s.positionLimit.maxPerStock}"
+                  oninput="updateSafety('positionLimit','maxPerStock',+this.value); document.getElementById('pl-pct').textContent=this.value+'%'" ${!s.positionLimit.enabled ? 'disabled' : ''}>
+                <span id="pl-pct" style="font-weight:800;font-size:14px;min-width:36px">${s.positionLimit.maxPerStock}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Time Guard -->
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:.75rem">
+              <span style="font-size:1.5rem">⏰</span>
+              <div>
+                <div style="font-weight:700;font-size:14px">Time Guard <span style="font-size:10px;color:var(--text3);font-weight:400">Optional</span></div>
+                <div style="font-size:12px;color:var(--text2)">Automatically square off all intraday positions before market close (e.g. 2:45 PM)</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:.75rem">
+              <input type="time" value="${s.timeGuard.cutoff}" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:.3rem .6rem;border-radius:var(--radius-sm);font-size:13px;font-family:var(--font)" onchange="updateSafety('timeGuard','cutoff',this.value)" ${!s.timeGuard.enabled ? 'disabled' : ''}>
+              <label class="toggle-switch">
+                <input type="checkbox" ${s.timeGuard.enabled ? 'checked' : ''} onchange="toggleSafety('timeGuard',this.checked)">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- News Guard -->
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:.75rem">
+              <span style="font-size:1.5rem">📰</span>
+              <div>
+                <div style="font-weight:700;font-size:14px">News Guard <span style="font-size:10px;color:var(--text3);font-weight:400">Optional · Beta</span></div>
+                <div style="font-size:12px;color:var(--text2)">Pause trading automatically when very negative news is detected (linked to Market Weather)</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" ${s.newsGuard.enabled ? 'checked' : ''} onchange="toggleSafety('newsGuard',this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Emergency Kill All -->
+      <div style="margin-top:2rem;padding:1.5rem;background:var(--red-dim);border:1px solid rgba(232,84,84,.25);border-radius:var(--radius);text-align:center">
+        <div style="font-weight:700;font-size:14px;margin-bottom:.35rem">Emergency Stop</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:1rem">Immediately halt ALL running strategies and square off all open positions. Use in emergencies only.</div>
+        <button class="btn btn-red" onclick="emergencyStop()">🔴 Trigger Emergency Stop</button>
+      </div>
+
+      <div class="sebi-inline" style="margin-top:1.5rem">AlgoStreet's safety controls are a best-effort layer. They cannot guarantee against slippage, execution failures, or broker outages. Always monitor your own capital.</div>
+    </div>`;
+}
+
+function toggleSafety(key, val) {
+  safetyState[key].enabled = val;
+  renderSafetyNet();
+  showToast(val ? `✅ ${key} enabled` : `⚠️ ${key} disabled`, val ? 'success' : 'info');
+}
+
+function updateSafety(key, field, val) {
+  safetyState[key][field] = val;
+}
+
+function toggleAllSafety(enable) {
+  Object.keys(safetyState).forEach(k => safetyState[k].enabled = enable);
+  renderSafetyNet();
+  showToast(enable ? '✅ All safety systems enabled' : '⚠️ All safety systems disabled', enable ? 'success' : 'info');
+}
+
+function emergencyStop() {
+  if (confirm('⚠️ EMERGENCY STOP: This will immediately cancel all orders and square off all positions. Are you sure?')) {
+    showToast('🔴 Emergency stop triggered! All positions being squared off…', 'error');
+    setTimeout(() => showToast('✅ All positions closed. Strategies paused.', 'success'), 2500);
+  }
+}
+
